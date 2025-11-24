@@ -1,0 +1,15 @@
+{
+  "name": "list_frames",
+  "description": "List all available CCTV frames the system can analyze.",
+  "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  },
+  "action": {
+    "file": {
+      "path": "data/cctv_frames",
+      "mode": "list"
+    }
+  }
+}

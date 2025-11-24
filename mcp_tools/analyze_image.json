@@ -1,0 +1,23 @@
+{
+  "name": "analyze_image",
+  "description": "Analyze a CCTV frame using Gemini Fusion Worker.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "image_base64": { "type": "string" }
+    },
+    "required": ["image_base64"]
+  },
+  "action": {
+    "api": {
+      "method": "POST",
+      "url": "http://fusion_worker:8000/upload-image",
+      "body": {
+        "type": "multipart",
+        "fields": {
+          "file": "{{image_base64}}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "get_frame",
+  "description": "Fetch the most recent CCTV frame from the simulation folder.",
+  "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  },
+  "action": {
+    "file": {
+      "path": "data/cctv_frames",
+      "mode": "latest"
+    }
+  }
+}

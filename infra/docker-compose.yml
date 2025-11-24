@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+
+  alert-service:
+    build: ../services/alert_service
+    container_name: alert-service
+    working_dir: /app
+    ports:
+      - "8001:8001"
+    environment:
+      - GEMINI_TEXT_ENDPOINT=${GEMINI_TEXT_ENDPOINT}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+      - TWILIO_TO_NUMBER=${TWILIO_TO_NUMBER}
+
+  fusion-worker:
+    build: ../services/fusion_worker
+    container_name: fusion_worker
+    depends_on:
+      - alert-service
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_VISION_ENDPOINT=${GEMINI_VISION_ENDPOINT}
+      - ALERT_SERVICE_URL=http://alert-service:8001
+
+  cctv_fetcher:
+    build: ../services/cctv_fetcher
+    container_name: cctv_fetcher
+    environment:
+      - CAMERA_SOURCE=folder://data/cctv_frames
+      - FUSION_URL=http://fusion-worker:8000/upload-image
+      - SAMPLE_INTERVAL=5
+    volumes:
+      - ../data/cctv_frames:/app/data/cctv_frames

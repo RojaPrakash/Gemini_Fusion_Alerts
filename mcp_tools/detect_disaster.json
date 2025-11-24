@@ -1,0 +1,17 @@
+{
+  "name": "detect_disaster",
+  "description": "Ask Gemini if a CCTV frame contains a suspicious situation deserving analysis.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "image_base64": { "type": "string" }
+    },
+    "required": ["image_base64"]
+  },
+  "action": {
+    "gemini": {
+      "model": "gemini-flash-lite-latest",
+      "prompt": "You are a real-time surveillance agent. Analyze this CCTV frame and respond ONLY with yes or no. YES = suspicious. NO = ignore."
+    }
+  }
+}
