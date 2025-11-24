@@ -1,4 +1,5 @@
 # Environment variables
+cleaned_repo/
 .env
 *.env
 infra/.env
