@@ -3,15 +3,44 @@ import requests
 import base64
 import json
 import time
+import re
 
 GEMINI_VISION_ENDPOINT = os.getenv("GEMINI_VISION_ENDPOINT")
 ALERT_SERVICE_URL = os.getenv("ALERT_SERVICE_URL")
 
+# ------------------------
+# Helper: Extract JSON from Gemini 2.5 responses
+# ------------------------
+def extract_json_block(text):
+    """
+    Gemini 2.x usually responds with:
 
+    ```json
+    { ... }
+    ```
+
+    This function extracts the { ... } part.
+    """
+    # Look for fenced json block
+    match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if match:
+        return match.group(1)
+
+    # If the response directly starts with { ... }
+    if text.strip().startswith("{"):
+        return text
+
+    return None
+
+
+# ------------------------
+# Retry wrapper
+# ------------------------
 def call_gemini_with_retry(payload, retries=5, delay=2):
     for attempt in range(1, retries + 1):
         try:
             r = requests.post(GEMINI_VISION_ENDPOINT, json=payload, timeout=20)
+
             if r.status_code == 429:
                 print(f"[Fusion] Rate limit hit (attempt {attempt})")
                 time.sleep(delay)
@@ -26,11 +55,13 @@ def call_gemini_with_retry(payload, retries=5, delay=2):
 
     raise Exception("Gemini API failed after multiple retries")
 
+
+# ------------------------
+# Main processing
+# ------------------------
 def process_image(image_bytes: bytes):
-    # Convert image → Base64
     b64 = base64.b64encode(image_bytes).decode()
 
-    # Gemini prompt
     payload = {
         "contents": [
             {
@@ -60,7 +91,7 @@ def process_image(image_bytes: bytes):
         ]
     }
 
-
+    # ---- Call Gemini ----
     try:
         response = call_gemini_with_retry(payload)
         data = response.json()
@@ -73,12 +104,19 @@ def process_image(image_bytes: bytes):
             "description": "gemini_error"
         }
 
+    # ---- Extract JSON from Gemini output ----
     try:
         output_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        result = json.loads(output_text)
-    except Exception:
-        print("[Fusion] JSON parse error")
-        result = {
+
+        json_block = extract_json_block(output_text)
+        if not json_block:
+            raise ValueError("No JSON block found")
+
+        result = json.loads(json_block)
+
+    except Exception as e:
+        print("[Fusion] JSON parse error:", e)
+        return {
             "detected": False,
             "category": "none",
             "confidence": 0,
@@ -86,7 +124,7 @@ def process_image(image_bytes: bytes):
             "raw": data
         }
 
-
+    # ---- If disaster detected → Push alert ----
     if result.get("detected") is True:
         alert_payload = {
             "category": result["category"],
@@ -99,7 +137,7 @@ def process_image(image_bytes: bytes):
             r = requests.post(
                 f"{ALERT_SERVICE_URL}/alerts",
                 json=alert_payload,
-                timeout=5
+                timeout=15
             )
             r.raise_for_status()
             print("[Fusion] Alert pushed:", r.json())
