@@ -1,28 +1,26 @@
-🚨 Smart Disaster Detection System
-Real-Time CCTV Disaster Intelligence using Gemini 2.5 Flash + Twilio SMS + AI Agents
+# 🚨 Smart Disaster Detection System
+Real-Time CCTV Disaster Detection using **Gemini 2.5 Flash** & **Twilio SMS**
 
-This project is an end-to-end AI-powered, agent-enabled disaster detection system built using microservices.
-It continuously monitors CCTV frames (simulated or real), detects hazards such as fire, flood, accidents, chemical spills, collapses, and triggers real-time SMS alerts using Twilio.
+This project is an end-to-end **AI‑powered**, **microservice-based** disaster detection system.  
+It continuously monitors CCTV frames (simulated or real), identifies hazards such as **fire, flood, accidents, collapses, chemical spills**, and sends **real‑time SMS alerts** using Twilio.
 
-It is fully containerized, lightweight, and ready for real-world integration with live CCTV streams.
+---
 
-🔧 Prerequisites
+## 🔧 Prerequisites
 
-Docker + Docker Compose
+- Docker & Docker Compose  
+- Gemini API Key (**must support gemini-2.5-flash**)  
+- Twilio account (Trial or Production)  
+- Python 3.10+ (optional for local testing)
 
-Twilio account with SMS trial/paid number
+---
 
-Gemini API Key (must support gemini-2.5-flash)
+## 🔐 Environment Variables Setup
 
-Python 3.10+ (optional for local testing)
+Create a file `.env` inside `infra/`:
 
-Internet access for Gemini & Twilio APIs
-
-🔐 Environment Variables Setup
-
-Create a .env file inside infra/:
-
-GEMINI_API_KEY=xxxxxxx
+```
+GEMINI_API_KEY=xxxxxx
 GEMINI_VISION_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=xxxxxx
 GEMINI_TEXT_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=xxxxxx
 
@@ -30,104 +28,135 @@ TWILIO_ACCOUNT_SID=xxxxxx
 TWILIO_AUTH_TOKEN=xxxxxx
 TWILIO_FROM_NUMBER=+1xxxxxxxx
 TWILIO_TO_NUMBER=+91xxxxxxxx
+```
 
+⚠️ **Important:** Older models like `flash-lite-latest` are deprecated and return **404**.  
+✔ Use **gemini-2.5-flash** for both VISION & TEXT reasoning.
 
-⚠ Note:
-Gemini 2.5 Flash is required because earlier Flash-Lite endpoints were deprecated.
+---
 
-▶️ How to Run the System
-1️⃣ Add CCTV frames
+## ▶️ How to Run the System
 
-Place frames inside:
+### **1️⃣ Add CCTV Frames**
 
+Place `.jpg` / `.png` images inside:
+
+```
 data/cctv_frames/
-
+```
 
 Examples:
+- fire.png  
+- flood.png  
+- accident.jpg  
+- safe.jpg  
 
-fire.png
+These simulate a CCTV feed.
 
-flood.png
+---
 
-accident.jpg
+### **2️⃣ Start All Services**
 
-safe.jpg
+Inside the `infra/` directory:
 
-These simulate a CCTV camera feed.
-
-2️⃣ Start all services
-
-From inside infra/ directory:
-
+```
 docker-compose down
 docker-compose up -d --build
-
+```
 
 This starts:
 
-fusion_worker (Gemini vision analysis)
+- 🧠 **fusion_worker** (Gemini vision analysis)  
+- 📢 **alert-service** (severity analysis + SMS)  
+- 🎥 **cctv_fetcher** (CCTV frame simulator)  
 
-alert-service (severity reasoning + SMS)
+---
 
-cctv_fetcher (simulated CCTV feed)
+## 🔍 Testing
 
-🔍 Testing & Logs
-✔ CCTV Fetcher
+### ✔ CCTV Fetcher Logs  
+```
 docker logs -f cctv_fetcher
-
-
-Example:
-
-[CCTV] Sending frame fire.png
-[CCTV] Fusion response: {...}
-
-✔ Fusion Worker
-docker logs -f fusion_worker
-
-
+```
 Expected:
+```
+[CCTV] Sending frame fire.png
+```
 
+### ✔ Fusion Worker Logs  
+```
+docker logs -f fusion_worker
+```
+Expected:
+```
 [Fusion] Detected fire with confidence 0.98
 [Fusion] Alert pushed
+```
 
-✔ Alert Service
+### ✔ Alert Service Logs  
+```
 docker logs -f alert-service
-
-
+```
 Expected:
+```
+[SMS] Sent: 201 {"status":"queued", ...}
+```
 
-[SMS] Sent: 201
-
-✔ Check Your Mobile
-
-You will receive:
-
+### ✔ SMS Received  
+Example message:
+```
 🚨 ALERT: FIRE DETECTED
 Severity: HIGH
 Confidence: 0.98
 Description: A vehicle is engulfed in flames.
+```
 
-🤖 MCP Tools (Agent Integration)
+---
 
-Located inside /mcp/:
+# 🤖 MCP Tools (Agent Integration)
 
-analyze_image.json
+Located in `/mcp/`:
 
-detect_disaster.json
+- analyze_image.json  
+- detect_disaster.json  
+- send_alert.json  
+- list_frames.json  
+- get_frame.json  
 
-send_alert.json
+These allow **AI Agents** (ChatGPT, Cursor, VSCode AI) to call your microservices directly.
 
-list_frames.json
+---
 
-get_frame.json
+#  System Architecture (High-Level)
 
-These allow AI agents (ChatGPT, Cursor, VSCode AI) to:
+The agent pipeline follows:
 
-Fetch frames
+### **Perception → Reasoning → Action**
 
-Analyze images
+1. **Perception**  
+   Gemini 2.5 Flash Vision analyzes CCTV frames.
 
-Trigger alerts
+2. **Reasoning**  
+   Text model classifies severity (LOW / MEDIUM / HIGH).
 
-Orchestrate workflows
+3. **Action**  
+   Alert service sends SMS via Twilio.
 
+4. **MCP Integration**  
+   Tools allow autonomous multi-agent orchestration.
+
+5. **Microservices**  
+   Docker-based modular design for scalability.
+
+---
+
+# 🎯 Summary
+
+This system demonstrates a **production-ready**, **agent‑enabled** AI pipeline capable of:  
+✔ Real-time CCTV monitoring  
+✔ AI hazard detection  
+✔ Severity reasoning  
+✔ SMS alert escalation  
+✔ MCP‑powered multi-agent integration  
+
+Perfect for **safety automation**, **smart cities**, **industrial monitoring**, and **AI agent workflows**.
